@@ -5,7 +5,9 @@
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
-#include <queue>          // std::queue
+#include <queue>
+#include <semaphore.h>
+
 
 
 using namespace std;
@@ -14,30 +16,6 @@ using namespace cv;
 #define size_y 1000
 #define size_x size_y*1.125
 #define NUM_THREADS 30
-
-
-
-int main ()
-{
-    int myint;
-
-    std::cout << "Please enter some integers (enter 0 to end):\n";
-
-    do {
-        std::cin >> myint;
-        myqueue.push (myint);
-    } while (myint);
-
-    std::cout << "myqueue contains: ";
-    while (!myqueue.empty())
-    {
-        std::cout << ' ' << myqueue.front();
-        myqueue.pop();
-    }
-    std::cout << '\n';
-
-    return 0;
-}
 
 //compute numer of iterations to diverge
 int mandelbrotIterations(const complex<float> &z0, const int max){
@@ -66,46 +44,51 @@ int mandelbrotSet(const complex<float> &z0, const int maxIter=500) {
     return cvRound(sqrt(iterations / (float) maxIter) * 255);
 }
 
+//funcion del thread
+void threadFn() {
+    //si no se ha terminado el stack
+    if(!myqueue.empty()){
+        var gpop= myqueue.pop();
 
-void mandelbrot_serial(Mat &img, const float x1, const float y1, const float scaleX, const float scaleY){
+        //operaciones de imaginarios
+        float x0 = qpop[0] / scaleX + x1;
+        float y0 = qpop[1] / scaleY + y1;
 
-    for (int i = 0; i < img.rows; i++){
+        complex<float> z0(x0, y0);
+        uchar value = (uchar) mandelbrotSet(z0);
 
-        for (int j = 0; j < img.cols; j++){
-
-            float x0 = j / scaleX + x1;
-            float y0 = i / scaleY + y1;
-
-            complex<float> z0(x0, y0);
-            uchar value = (uchar) mandelbrotSet(z0);
-            img.ptr<uchar>(i)[j] = value;
-        }
+        //se escribe a imagen data del fractal
+        sem_wait(&mySemaphore);
+        img.ptr<uchar>(qpop[0])[qpop[1]] = value;
+        sem_post(&mySemaphore);
     }
-}
-void threadFn(std::queue ){
-    float x0 = j / scaleX + x1;
-    float y0 = i / scaleY + y1;
+    return 0;
 
-    complex<float> z0(x0, y0);
-    uchar value = (uchar) mandelbrotSet(z0);
-    img.ptr<uchar>(i)[j] = value;
 }
 
+//globales
 
+//dimensiones del fractales
 float x1 = -2.1f;
 float x2 =  0.6f;
 float y1 = -1.2f;
 float y2 =  1.2f;
 
+//escalas del fractal
 float scaleX = mandelbrotImg.cols / (x2 - x1);
 float scaleY = mandelbrotImg.rows / (y2 - y1);
+//queue de datos
+std::queue<int> myqueue;
+//semaphore
+sem_t mySemaphore;
+
+//!globales
 
 int main(int argc, char *argv[]){
 
     //prepare variables
     Mat mandelbrotImg(size_y, size_x, CV_8U);
     //queue donde se almacenan los valores
-    std::queue<int> myqueue;
 
     //se llena el queue
     for (int i = 0; i < img.rows; i++){
@@ -115,12 +98,12 @@ int main(int argc, char *argv[]){
         }
     }
 
-
+    //iniciar el semaphore
+    sem_init(&mySemaphore,0,1);
 
     //create threads
-    //launch threads
     for(t=0; t<NUM_THREADS; t++){
-        cout<<"In main: creating thread "<< t<< endl;
+        cout<<"Creando Thread No."<< t<< endl;
         rc = pthread_create(&threads[t], NULL, threadFn, (void *)t);
 
         if (rc){
@@ -131,13 +114,7 @@ int main(int argc, char *argv[]){
 
     //compute the fractal
     double t2 = (double) getTickCount();
-    for (int i = 0; i < img.rows; i++){
 
-        for (int j = 0; j < img.cols; j++){
-
-
-        }
-    }
 
     //mandelbrot_serial(mandelbrotImg, x1, y1, scaleX, scaleY);
     t2 = ((double) getTickCount() - t2) / getTickFrequency();
