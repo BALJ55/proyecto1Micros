@@ -1,4 +1,4 @@
-TARGET= mandelbrot_serial
+TARGET= main
 
 all: $(TARGET)
 

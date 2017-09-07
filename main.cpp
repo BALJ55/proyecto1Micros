@@ -5,6 +5,7 @@
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
+//se importa el queue y el semaphore
 #include <queue>
 #include <semaphore.h>
 
@@ -15,7 +16,8 @@ using namespace cv;
 
 #define size_y 1000
 #define size_x size_y*1.125
-#define NUM_THREADS 30
+//cantidad de threads optimo
+#define NUM_THREADS 32
 
 //compute numer of iterations to diverge
 int mandelbrotIterations(const complex<float> &z0, const int max){
